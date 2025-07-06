@@ -1,40 +1,31 @@
+# Use the official Arch Linux base image
 FROM archlinux:latest
 
+# Set environment variables
 ENV TERM=xterm
 
-# Install necessary packages
+# Install necessary packages (noVNC, X11, and dependencies)
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
-        sudo \
         xfce4 \
+        xorg-server-xvfb \
         xorg-xinit \
-        tigervnc \
-        dbus \
+        openbox \
+        noVNC \
         ttf-dejavu \
-        firefox && \
+        dbus \
+        python && \
     pacman -Sc --noconfirm && \
     rm -rf /var/cache/pacman/pkg/*
 
-# Create a non-root user
-RUN useradd -m -s /bin/bash user && \
-    echo "user:password" | chpasswd && \
-    echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+# Install required packages for noVNC
+RUN git clone https://github.com/novnc/noVNC.git /noVNC && \
+    cd /noVNC && \
+    git checkout v1.2.0 && \
+    npm install
 
-# Configure TigerVNC with vncsession
-RUN mkdir -p /etc/tigervnc && \
-    echo ":1=user" > /etc/tigervnc/vncserver.users && \
-    echo "session=xfce" > /etc/tigervnc/vncserver-config-defaults
+# Expose noVNC port (default 8080 for web access)
+EXPOSE 8080
 
-# Set VNC password
-RUN mkdir -p /home/user/.vnc && \
-    echo "password" | vncpasswd -f > /home/user/.vnc/passwd && \
-    chmod 600 /home/user/.vnc/passwd && \
-    chown -R user:user /home/user/.vnc
-
-# Expose VNC port
-EXPOSE 5901
-
-# NOTE: Do NOT switch to user — stay as root to launch vncsession
-
-# Start the VNC session for 'user'
-CMD ["/bin/bash", "-c", "vncsession user :1 && sleep 5 && tail -f /dev/null"]
+# Configure noVNC to connect to Xvfb (virtual X server)
+CMD ["bash", "-c", "Xvfb :1 -screen 0 1280x800x24 & DISPLAY=:1 openbox & /noVNC/utils/launch.sh --listen 8080 --vnc localhost:5901 && tail -f /dev/null"]
