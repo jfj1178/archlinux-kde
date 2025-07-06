@@ -4,7 +4,7 @@ FROM archlinux:latest
 # Set environment variables
 ENV TERM=xterm
 
-# Install necessary packages (without noVNC)
+# Install necessary packages (excluding noVNC from pacman)
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
         xfce4 \
@@ -20,19 +20,19 @@ RUN pacman -Syu --noconfirm && \
     pacman -Sc --noconfirm && \
     rm -rf /var/cache/pacman/pkg/*
 
-# Clone and install noVNC manually
-RUN git clone https://github.com/novnc/noVNC.git /noVNC && \
-    cd /noVNC && \
-    git checkout v1.2.0 && \
-    npm install && \
-    ln -s /noVNC/vnc.html /noVNC/index.html
+# Clone and set up noVNC manually
+RUN git clone https://github.com/novnc/noVNC.git /noVNC
+WORKDIR /noVNC
+RUN git checkout v1.2.0
+RUN npm install
+RUN ln -s /noVNC/vnc.html /noVNC/index.html
 
-# Expose noVNC port
+# Expose noVNC port (default 8080 for web access)
 EXPOSE 8080
 
-# Configure noVNC to connect to Xvfb and run Openbox
+# Configure noVNC to connect to Xvfb (virtual X server)
 CMD ["bash", "-c", "\
     Xvfb :1 -screen 0 1280x800x24 & \
     DISPLAY=:1 openbox & \
     /noVNC/utils/launch.sh --listen 8080 --vnc localhost:5901 \
-    "]
+"]
