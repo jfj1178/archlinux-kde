@@ -53,7 +53,8 @@ EXPOSE 5901
 USER user
 
 # Command to start the VNC server when the container runs
+# Using /bin/bash -c to ensure the command and its arguments are parsed correctly by a shell.
 # -geometry: sets the resolution of the virtual desktop
 # -depth: sets the color depth
 # :1: specifies display number 1 (VNC port will be 5901)
-CMD ["vncserver", "-geometry", "1280x800", "-depth", "24", ":1"]
+CMD ["/bin/bash", "-c", "vncserver -geometry 1280x800 -depth 24 :1"]
