@@ -52,9 +52,10 @@ EXPOSE 5901
 # Switch to the non-root user
 USER user
 
+# Set HOME environment variable explicitly for the user
+ENV HOME /home/user
+
 # Command to start the VNC server when the container runs
-# Using /bin/bash -c to ensure the command and its arguments are parsed correctly by a shell.
-# -geometry: sets the resolution of the virtual desktop
-# -depth: sets the color depth
-# :1: specifies display number 1 (VNC port will be 5901)
-CMD ["/bin/bash", "-c", "vncserver -geometry 1280x800 -depth 24 :1"]
+# Start vncserver in the background and then keep the container alive with tail -f /dev/null
+# Add a small sleep to give vncserver a moment to initialize
+CMD ["/bin/bash", "-c", "vncserver -geometry 1280x800 -depth 24 :1 && sleep 5 && tail -f /dev/null"]
