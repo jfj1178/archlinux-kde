@@ -1,61 +1,44 @@
 # Use the official Arch Linux base image
 FROM archlinux:latest
 
-# Set environment variables for non-interactive installation
-ENV DEBIAN_FRONTEND=noninteractive
+# Environment setup
 ENV TERM=xterm
 
-# Install necessary packages:
-# sudo: for user management
-# xfce4: the lightweight desktop environment
-# xorg-xinit: X server initialization
-# tigervnc: the VNC server
-# dbus: required by XFCE
-# ttf-dejavu: common fonts for better display
-# firefox: a web browser for testing the desktop (optional, adds size)
+# Install required packages
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
-    sudo \
-    xfce4 \
-    xorg-xinit \
-    tigervnc \
-    dbus \
-    ttf-dejavu \
-    firefox && \
+        sudo \
+        xfce4 \
+        xorg-xinit \
+        tigervnc \
+        dbus \
+        ttf-dejavu \
+        firefox && \
     pacman -Sc --noconfirm && \
     rm -rf /var/cache/pacman/pkg/*
 
-# Create a non-root user 'user' with password 'password'
-# This is for VNC login. In a real scenario, use strong, secret passwords.
+# Create a non-root user
 RUN useradd -m -s /bin/bash user && \
     echo "user:password" | chpasswd && \
     echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# Set VNC password for the 'user'
-# This password will be used to connect to the VNC server.
-# It's set directly here for demonstration, but should be an environment variable in production.
+# Configure TigerVNC with modern vncsession approach
+RUN mkdir -p /etc/tigervnc && \
+    echo ":1=user" > /etc/tigervnc/vncserver.users && \
+    echo "session=xfce" > /etc/tigervnc/vncserver-config-defaults
+
+# Set VNC password
 RUN mkdir -p /home/user/.vnc && \
     echo "password" | vncpasswd -f > /home/user/.vnc/passwd && \
     chmod 600 /home/user/.vnc/passwd && \
     chown -R user:user /home/user/.vnc
 
-# Configure XFCE session for VNC
-# This script tells VNC how to start the XFCE desktop.
-RUN echo "#!/bin/bash" > /home/user/.vnc/xstartup && \
-    echo "startxfce4 &" >> /home/user/.vnc/xstartup && \
-    chmod +x /home/user/.vnc/xstartup && \
-    chown user:user /home/user/.vnc/xstartup
-
-# Expose the VNC port (default is 5901)
+# Expose VNC port
 EXPOSE 5901
 
-# Switch to the non-root user
+# Switch to non-root user
 USER user
-
-# Set HOME environment variable explicitly for the user
 ENV HOME /home/user
 
-# Command to start the VNC server when the container runs
-# Start vncserver in the background and then keep the container alive with tail -f /dev/null
-# Add a small sleep to give vncserver a moment to initialize
-CMD ["/bin/bash", "-c", "vncserver -geometry 1280x800 -depth 24 :1 && sleep 5 && tail -f /dev/null"]
+# Start the VNC session using modern method
+CMD ["/bin/bash", "-c", "vncsession user :1 && sleep 5 && tail -f /dev/null"]
