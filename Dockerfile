@@ -1,10 +1,8 @@
-# Use the official Arch Linux base image
 FROM archlinux:latest
 
-# Environment setup
 ENV TERM=xterm
 
-# Install required packages
+# Install necessary packages
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
         sudo \
@@ -22,7 +20,7 @@ RUN useradd -m -s /bin/bash user && \
     echo "user:password" | chpasswd && \
     echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# Configure TigerVNC with modern vncsession approach
+# Configure TigerVNC with vncsession
 RUN mkdir -p /etc/tigervnc && \
     echo ":1=user" > /etc/tigervnc/vncserver.users && \
     echo "session=xfce" > /etc/tigervnc/vncserver-config-defaults
@@ -36,9 +34,7 @@ RUN mkdir -p /home/user/.vnc && \
 # Expose VNC port
 EXPOSE 5901
 
-# Switch to non-root user
-USER user
-ENV HOME /home/user
+# NOTE: Do NOT switch to user — stay as root to launch vncsession
 
-# Start the VNC session using modern method
+# Start the VNC session for 'user'
 CMD ["/bin/bash", "-c", "vncsession user :1 && sleep 5 && tail -f /dev/null"]
