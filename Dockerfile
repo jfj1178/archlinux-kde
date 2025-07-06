@@ -1,10 +1,9 @@
 # Use the official Arch Linux base image
 FROM archlinux:latest
 
-# Set environment variables
 ENV TERM=xterm
 
-# Install necessary packages (excluding noVNC from pacman)
+# Install required system packages
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
         xfce4 \
@@ -20,17 +19,15 @@ RUN pacman -Syu --noconfirm && \
     pacman -Sc --noconfirm && \
     rm -rf /var/cache/pacman/pkg/*
 
-# Clone and set up noVNC manually
+# Clone and build noVNC (latest version)
 RUN git clone https://github.com/novnc/noVNC.git /noVNC
 WORKDIR /noVNC
-RUN git checkout v1.2.0
+RUN git checkout v1.4.0
 RUN npm install
 RUN ln -s /noVNC/vnc.html /noVNC/index.html
 
-# Expose noVNC port (default 8080 for web access)
 EXPOSE 8080
 
-# Configure noVNC to connect to Xvfb (virtual X server)
 CMD ["bash", "-c", "\
     Xvfb :1 -screen 0 1280x800x24 & \
     DISPLAY=:1 openbox & \
