@@ -1,5 +1,5 @@
 FROM archlinux:latest
-
+#test
 ENV TERM=xterm
 
 # Install necessary system packages
